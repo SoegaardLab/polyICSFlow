@@ -135,7 +135,7 @@
 #'
 #'
 #' @export
-calcPolyfunctionality = function(x, md_cols, pop_col = "cell_type", resolution = "MarkerComb", condition_col = "Stimulation", background_val = "unstimulated"){
+calcPolyfunctionality <- function(x, md_cols, pop_col = "cell_type", resolution = "MarkerComb", condition_col = "Stimulation", background_val = "unstimulated"){
 
   if(is.factor(x[[resolution]])){
     unique_polyfunct <- levels(x[[resolution]])

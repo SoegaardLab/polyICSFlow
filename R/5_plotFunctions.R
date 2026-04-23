@@ -72,8 +72,8 @@ plotMarkerCombHeatmap <- function(marker_names, orientation = c("vertical","hori
     annot <- ComplexHeatmap::HeatmapAnnotation(df = df_annotation,
                                                col = list(MarkerCount = palette_count,
                                                           MarkerComb = palette_comb),
-                                               show_legend = c(F,F),
-                                               show_annotation_name = c(T,T),
+                                               show_legend = c(FALSE,FALSE),
+                                               show_annotation_name = c(TRUE,TRUE),
                                                annotation_name_gp = grid::gpar(fontsize = 8),
                                                which = "column")
     p <- ComplexHeatmap::Heatmap(matrix_legend,
@@ -366,7 +366,6 @@ plotCellCountsAtLeast <- function(data_markerComb, cell_subset_params = list(cel
 #'  \code{\link[FlowSOM]{AggregateFlowFrames}} function.
 #' @param assigned_MarkerCombs A vector of assigned marker combinations per
 #'   cell in \code{x}, as created by \code{\link{assignMarkerCombinations}}.
-#' @param seed Set a seed for reproducible results (point jitters and potential downsampling). Default = 1.
 #' @param cell_subset_params List with parameters describing what subset of cells (cellTypes_plot) should be plotted,
 #'  from a vector of cell types (cellTypes). Default = \code{list(cellTypes = NULL, cellTypes_plot = NULL)},
 #'  i.e. all cells in the dataset are plotted.
@@ -430,8 +429,7 @@ plotCellCountsAtLeast <- function(data_markerComb, cell_subset_params = list(cel
 #'                                       assigned_MarkerCombs = df_markerComb$MarkerComb,
 #'                                       return_list = TRUE)
 
-plotMarkerComb2DScatters <- function(input, assigned_MarkerCombs, seed = 1, cell_subset_params = list(cellTypes = NULL,cellTypes_plot = NULL), palette_comb = NULL, return_list = FALSE){
-  set.seed(seed)
+plotMarkerComb2DScatters <- function(input, assigned_MarkerCombs, cell_subset_params = list(cellTypes = NULL,cellTypes_plot = NULL), palette_comb = NULL, return_list = FALSE){
 
   # extract marker names from the all positive population (tail of levels)
   marker_names <- strsplit(sub("\\+$", "", tail(levels(assigned_MarkerCombs),1)), "\\+")[[1]]

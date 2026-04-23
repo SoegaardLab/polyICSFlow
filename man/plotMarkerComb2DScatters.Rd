@@ -7,7 +7,6 @@
 plotMarkerComb2DScatters(
   input,
   assigned_MarkerCombs,
-  seed = 1,
   cell_subset_params = list(cellTypes = NULL, cellTypes_plot = NULL),
   palette_comb = NULL,
   return_list = FALSE
@@ -22,8 +21,6 @@ plotMarkerComb2DScatters(
 
 \item{assigned_MarkerCombs}{A vector of assigned marker combinations per
 cell in \code{x}, as created by \code{\link{assignMarkerCombinations}}.}
-
-\item{seed}{Set a seed for reproducible results (point jitters and potential downsampling). Default = 1.}
 
 \item{cell_subset_params}{List with parameters describing what subset of cells (cellTypes_plot) should be plotted,
 from a vector of cell types (cellTypes). Default = \code{list(cellTypes = NULL, cellTypes_plot = NULL)},
