@@ -1,0 +1,56 @@
+Package: polyICSFlow
+Type: Package
+Title: Identifying the Frequency of Polyfunctional Antigen-Specific T cells 
+    in ICS Flow Cytometry Data
+Version: 0.1.0
+Authors@R: c(person("Lisa", "Loksø Dietz",
+                    role = c("aut", "cre"),
+                    email = "lisdie@rm.dk"),
+             person("Sofie", "Van Gassen", 
+                    role = "aut",
+                    email = "sofie.vangassen@ugent.be"),
+             person("Sarah", "Bonte", 
+                    role = "aut",
+                    email = "sarahm.bonte@ugent.be"),
+             person("Yvan", "Saeys", 
+                    role = "aut", 
+                    email="yvan.saeys@ugent.be"),
+             person("Ole", "Schmeltz Søgaard", 
+                    role = "aut", 
+                    email = "olesoega@rm.dk"))
+Imports:
+    flowCore,
+    flowWorkspace,
+    openCyto,
+    CytoExploreR,
+    FlowSOM,
+    ComplexHeatmap,
+    SummarizedExperiment,
+    cowplot,
+    dplyr,
+    forcats,
+    ggtext,
+    rlang,
+    scales,
+    stringr,
+    tidyselect,
+    tidyr,
+    magrittr,
+    ggplot2,
+    methods
+Description: polyICSFlow systematically identifies all cytokine combinations 
+    detected in an intracellular cytokine staining (ICS) flow cytometry assay 
+    and quantifies polyfunctional antigen-specific responses to single or 
+    multiple antigens. The package also offers versatile plotting options for 
+    efficient data exploration and visualization of cytokine co-expression 
+    profiles.
+License: GPL (>=2)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
