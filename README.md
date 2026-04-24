@@ -4,13 +4,9 @@
 
 <!-- badges: end -->
 
-::: {align="center"}
 <img src="man/figures/polyICSFlow.png" width="200"/>
-:::
 
-::: {align="center"}
 Identifying the Frequency of Polyfunctional Antigen-Specific T cells in ICS Flow Cytometry Data.
-:::
 
 ## Citation
 

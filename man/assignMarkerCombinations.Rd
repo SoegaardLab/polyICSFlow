@@ -14,7 +14,7 @@ whether a cell is included in the gate, as constructed by the \code{\link{getMar
 If \code{simple}, the output includes only \code{MarkerComb} (exact marker combinations),
 \code{MarkerCount} (number of functions), and \code{Functionality} (mono/polyfunctional).
 If \code{exhaustive}, the output additionally contains all "atleast_n" columns, which are logical
-describing whether cells have at least 2, 3, ... \eqn{n} markers in any combination. Default = \code{simple}.}
+describing whether cells have at least 1, 2, 3, ... \eqn{n} markers in any combination. Default = \code{simple}.}
 }
 \value{
 The input data.frame with three extra columns describing
