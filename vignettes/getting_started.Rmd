@@ -1,5 +1,5 @@
 ---
-title: "getting_started"
+title: "PolyICSFlow: Identifying the Frequency of Polyfunctional Antigen-Specific T cells in ICS Flow Cytometry Data"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{getting_started}
@@ -7,23 +7,310 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-## Setup
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "100%"
 )
 ```
 
-## Load the library
+This vignettes describes a protocol for analysing flow cytometry intracellular cytokine staining (ICS) data with the polyICSFlow protocol. polyICSFlow is designed to assign single cells cytokine positivity based on gates and subsequently find cytokine combinations observed in the data, and lastly, quantify the peptide-specific T cells within a user-defined cell subset. The package requires pre-processed flow cytometry data from an ICS dataset with cells stimulated with a peptide of interest (e.g. viral peptide or a tumor antigen) and a negative control stimulation to determine background activation.
 
-```{r setup}
+<img src="figures/workflow_extended.png" width="100%"/>
+
+In this vignette, we analyze two FCS files from the same participant: one stimulated with HIV Gag peptide and one unstimulated control. The samples were stained with a 27-color panel and acquired using spectral flow cytometry. This panel includes cytokine and degranulation markers (IFNγ, TNF, IL-2, CD107a), as well as markers of differentiation, proliferation, transcriptional activity, effector function, and immune checkpoints.
+
+The FCS files were transformed using estimateLogicle and pre-gated to exclude debris, dead cells, doublets, and non-lymphocytes. Low-quality events were further removed using PeacoQC. CD8 T cells were then identified by FlowSOM clustering of lymphocytes based on CD3, CD4, CD8, CD16, and CD19 expression, selecting the CD3⁺CD8⁺CD4⁻CD16⁻CD19⁻ FlowSOM metacluster.
+
+The examples below focus on the cytokines IFNγ, TNF, IL-2, and the degranulation marker CD107a; however, polyICSFlow can be applied to any combination of cytokines of interest in your flow panel. It is also compatible with any peptide stimulation enabling analyses of antigen specificity and is agnostic to the acquisition platform, supporting data from both spectral and conventional flow cytometry, provided appropriate preprocessing (see below) has been performed.
+
+## 1) Installation
+
+```{r Install packages}
+# if (!requireNamespace("BiocManager", quietly = TRUE)) 
+#   install.packages("BiocManager")
+# BiocManager::install("flowCore") 
+# BiocManager::install("flowWorkspace")
+# BiocManager::install("openCyto")
+# BiocManager::install("FlowSOM")
+# BiocManager::install("ComplexHeatmap")
+# BiocManager::install("SummarizedExperiment")
+# BiocManager::install("polyICSFlow")
+# 
+# remotes::install_github("RGLab/cytoinstaller")
+# 
+# if(!requireNamespace("devtools", quietly=TRUE)) 
+#   install.packages("devtools")
+# devtools::install_github("DillonHammill/CytoExploreR")
+# 
+# install.packages("cowplot")
+# install.packages("dplyr")
+# install.packages("forcats")
+# install.packages("ggtext")
+# install.packages("rlang")
+# install.packages("scales")
+# install.packages("stringr")
+# install.packages("tidyselect")
+# install.packages("tidyr")
+# install.packages("magrittr")
+# install.packages("ggplot2")
+# install.packages("ggridges")
+# install.packages("ggh4x")
+```
+
+```{r Load libraries}
 library(polyICSFlow)
 ```
 
-## Session info
+## 2) Preparing the data
 
-```{r session info}
-sessionInfo()
+polyICSFlow requires a gatingHierarchy or gatingSet as input with an applied gatingTemplate to gate on cytokines of interest.
+
+To get our input for polyICSFlow, raw FCS files need to go through the following steps, which are described in detail in the sections below:
+
+-   Data pre-processing
+-   Cytokine gating
+-   Defining cell populations
+
+### 2.1) Data pre-processing
+
+Data needs to be pre-processed including unmixing (spectral) or compensation (conventional), data transformation, and cleaning. Pre-processing steps have been described in detail elsewhere and will therefore not be shown here. We refer to resources such as:
+
+-   [Analyzing high-dimensional cytometry data using FlowSOM](https://pubmed.ncbi.nlm.nih.gov/34172973/)
+-   [How to Prepare Spectral Flow Cytometry Datasets for High Dimensional Data Analysis: A Practical Workflow](https://pubmed.ncbi.nlm.nih.gov/34868024/)
+
+### 2.2) Cytokine gating
+
+We load our pre-processed data as a flowSet.
+
+```{r Load preprocessed data}
+# define path to data
+path_data <- system.file("extdata", package = "polyICSFlow")
+
+# load pre-processed fcs files as flowSet
+fs <- flowCore::read.flowSet(path = path_data,
+                             pattern = ".fcs",
+                             truncate_max_range = FALSE,
+                             transformation = FALSE)
+
+flowWorkspace::pData(fs)
 ```
 
+Then create a gatingSet to prepare for gating:
+
+```{r Create gatingSet}
+# create GatingSet from flowSet 
+gs <- flowWorkspace::GatingSet(fs)
+```
+
+From the 2D scatter plots we see that the FCS files indeed only contain CD3+CD8+ cells:
+
+```{r Check cell population}
+# check marker expression on cells
+CytoExploreR::cyto_plot(gs,
+                        select = 1,          
+                        channels = c("CD3","CD8"),
+                        parent = "root",
+                        ylim = c(0,4))
+CytoExploreR::cyto_plot(gs,
+                        select = 1,          
+                        channels = c("CD3","CD4"),
+                        parent = "root",
+                        ylim = c(0,4))
+```
+
+Because our gatingSet only contains CD8 T cells, we gate on the root population as specified in the gatingTemplate.
+
+```{r Apply gatingTemplate}
+# apply GatingTemplate to flowSet 
+gt <- openCyto::gatingTemplate(file.path(path_data, "gatingTemp_cytokines.csv"))
+openCyto::gt_gating(x = gt, y = gs)
+
+gt@nodes
+
+```
+
+We can check our cytokine gates:
+
+```{r Plot gating}
+
+plot(gs)
+CytoExploreR::cyto_plot_gating_tree(gs)
+#CytoExploreR::cyto_plot_gating_scheme(gs)
+
+```
+
+### 2.3) Defining cell populations
+
+Cell population labels need to be provided as a string and can be obtained from any source, e.g., annotated metacluster_ids from FlowSOM clustering or cell labels obtained from manual gating.
+
+FlowSOM clustering of the CD8 T cells:
+
+```{r population labels}
+markers_clust <- c("CD45RA","CCR7","CD27","CD95","TCF1","Tbet","TIGIT","CD39","CCR4","CD16")
+channels_clust <- fs[[1]]@parameters@data %>% dplyr::filter(desc %in% markers_clust)%>%dplyr::pull(name) %>% unname
+fsom <- FlowSOM::FlowSOM(fs,
+                         compensate = FALSE,
+                         transform = FALSE,
+                         scale = FALSE,
+                         colsToUse = channels_clust,
+                         xdim = 8,
+                         ydim = 8,
+                         nClus = 10)
+
+cell_labels <- fsom$metaclustering[fsom$map$mapping[,1]]
+
+```
+
+Loaded FlowSOM cluster labels from elsewhere:
+
+```{r}
+cell_labels_external <- readRDS(file.path(path_data, "cell_labels.rds"))
+```
+
+## 4) Using polyICSFlow
+
+### 4.1) Assigning cytokine positivity
+
+```{r polyICSFlow1}
+# Get marker positivity per cell
+df_markerPos <- getMarkerPositivity(x = gs,
+                                    gate_names = c("IFN+","TNFa+","IL2+","CD107a+"))
+
+head(df_markerPos)
+```
+
+### 4.2) Assigning marker combinations
+
+From the output of the previous function, we then assign each cell cytokine combinations.
+
+Either in simple mode, where we get information on:
+
+-   **`MarkerComb`**: A factor describing which marker combination a specific cell has. It represents all mutually exclusive combinations (e.g., 4 markers → 2⁴ = 16 combinations).
+
+-   **`MarkerCount`**: An integer describing the number of functions of the cell (i.e., the count of positive markers).
+
+-   **`Functionality`**: A factor grouping `MarkerCount` into three categories:
+
+    -   *No cytokines* (`MarkerCount == 0`)
+    -   *Monofunctional* (`MarkerCount == 1`)
+    -   *Polyfunctional* (`MarkerCount > 1`)
+
+```{r polyICSFlow2a}
+# Assign marker combinations to each cell based on marker positivity
+# Simple mode
+df_markerComb <- assignMarkerCombinations(data_markerPos = df_markerPos,
+                                          mode = "simple")
+head(df_markerComb)
+```
+
+Or exhaustive mode, which additionally adds `atleast_n` columns, which are logical variables indicating whether cells express at least 1, 2, 3, …, *n* markers in any combination.
+
+```{r polyICSFlow2b}
+# Exhaustive mode
+df_markerComb <- assignMarkerCombinations(data_markerPos = df_markerPos,
+                                          mode = "exhaustive")
+names(df_markerComb)
+
+```
+
+The two modes are described in the figure below (`TRUE` = black, `FALSE` = grey):
+
+<img src="figures/assignMarkerCombinations_modes.png" width="100%"/>
+
+### 4.3) Calculating peptide-specificity
+
+To calculate peptide-specificity, we need to add sample metadata to define cell population levels and stimulation conditions. Here we choose `resolution = "MarkerComb` to quantify at individual marker combination levels, but any column output from the previous function can be used (e.g. MarkerCount, Functionality, etc..)
+
+```{r polyICSFlow3}
+# Read metadata 
+df_md <- read.csv(file.path(path_data, "metadata.csv"))
+
+# Add metadata to dataframe
+df <- df_markerComb %>%
+    dplyr::mutate(ID = df_md$ID,
+                  Stimulation = df_md$Stimulation,
+                  cell_type = cell_labels_external)
+
+# Calculate by Marker Combination
+result <- calcPolyfunctionality(x = df,
+                                md_cols = c("ID"),
+                                pop_col = "cell_type",
+                                resolution = "MarkerComb",
+                                condition_col = "Stimulation",
+                                background_val = "Unstim")
+
+head(result)
+```
+
+The results can be plottet using ggplot. From this, we see that metaclusters 2 and 4 are the most HIV-1 specific clusters, and that metacluster 4 has a high frequency of triple positive IFNg+TNFa+CD107a+ cells:
+
+```{r Plot result}
+library(ggplot2)
+library(ggh4x)
+result %>%
+  dplyr::filter(Stimulation != "Unstim")%>%
+  ggplot(aes(x = cell_type,
+             y = perc_pos_backgroundSubtracted,
+             fill = MarkerComb))+
+  facet_grid2(Stimulation~ID)+
+  geom_bar(stat="identity")+
+  theme_bw()+
+  ylab("Frequency of HIV-1-Gag specific CD8 T cells")+
+  xlab("CD8 metacluster")+
+  scale_fill_manual(values = c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6","#FF7F00","#FDB462","#E7298A","#E78AC3","#33A02C", "#B2DF8A","#55A1B1","#8DD3C7","#A6761D"))
+```
+
+(Note that the FCS files were downsampled to 100,000 cells that were negative for all markers to reduce file size and run times; as a result, the apparent frequency of HIV-1–specific cells is artificially inflated and does not reflect the true biological frequency.)
+
+It is also possible to extract the cell counts for each marker combination:
+
+```{r Extract numbers}
+extractCellCounts(df_markerComb)
+```
+
+## 5) Plotting options
+
+polyICSFlow offers different plotting options to visualise your data and cytokine combinations.
+
+The first is a simple data-independent heatmap visualizing all possible combinations and their default color scheme:
+
+```{r Plotting polyICSFlow1, fig.width=7, fig.height=3.5}
+
+plotMarkerCombHeatmap(marker_names = c("IFN","TNFa","IL2","CD107a"),
+                       orientation = "horizontal")
+
+
+```
+
+The remaining plotting options plot your data to give an idea of which combinations are most abundant.
+
+```{r Plotting polyICSFlow2, fig.height = 5, fig.width=3.5, out.width = "50%"}
+plotCellCountsExactly(data_markerComb = df_markerComb)
+```
+
+```{r Plotting polyICSFlow3, fig.width=7, fig.height=5}
+plotCellCountsAtLeast(data_markerComb = df_markerComb)
+```
+
+```{r Plotting polyICSFlow4, fig.width=10, fig.height=6}
+library(patchwork)
+p1 <- plotCellCountsExactly(data_markerComb = df_markerComb)
+p2 <- plotCellCountsAtLeast(data_markerComb = df_markerComb)
+p1+p2+plot_layout(guides = "collect",widths = c(1,4))
+```
+
+```{r Plotting polyICSFlow5, fig.width=16,fig.height=16}
+set.seed(1) # setting a seed is recommended to get reproducible visualizations
+plotMarkerComb2DScatters(input = fs,
+                         assigned_MarkerCombs = df_markerComb$MarkerComb)
+```
+
+## 6) Session info
+
+```{r sessionInfo}
+sessionInfo()
+```
