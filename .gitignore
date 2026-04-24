@@ -3,3 +3,5 @@ R/.RData
 R/.Rhistory
 .Rproj.user
 .Rhistory
+.DS_Store
+tests/testthat/.DS_Store

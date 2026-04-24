@@ -169,7 +169,7 @@ calcPolyfunctionality <- function(x, md_cols, pop_col = "cell_type", resolution 
                   perc_pos_backgroundSubtracted = dplyr::if_else(is.na(.data$background_perc),
                                                                  NA_real_,
                                                                  pmax(.data$perc_pos - .data$background_perc, 0)))%>%
-    dplyr::select(-.data$background_perc)%>%
+    dplyr::select(-"background_perc")%>%
     dplyr::ungroup()
 
   # Check all backgrounds are zero after background subtraction
