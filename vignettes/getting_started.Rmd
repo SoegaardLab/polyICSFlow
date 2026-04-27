@@ -108,18 +108,17 @@ gs <- flowWorkspace::GatingSet(fs)
 
 From the 2D scatter plots we see that the FCS files indeed only contain CD3+CD8+ cells:
 
-```{r Check cell population}
+```{r Check cell population, warning = FALSE,fig.width=8, fig.height=4, dev='png'}
 # check marker expression on cells
-CytoExploreR::cyto_plot(gs,
-                        select = 1,          
-                        channels = c("CD3","CD8"),
-                        parent = "root",
-                        ylim = c(0,4))
-CytoExploreR::cyto_plot(gs,
-                        select = 1,          
-                        channels = c("CD3","CD4"),
-                        parent = "root",
-                        ylim = c(0,4))
+CytoExploreR::cyto_plot_custom(matrix(c(1:2),ncol=2))
+for(channel_plot in c("CD8","CD4")){
+  CytoExploreR::cyto_plot(gs[[1]],
+                          parent = "root",
+                          channels = c("CD3",channel_plot),
+                          ylim = c(0,4))
+  }
+
+
 ```
 
 Because our gatingSet only contains CD8 T cells, we gate on the root population as specified in the gatingTemplate.
@@ -135,12 +134,21 @@ gt@nodes
 
 We can check our cytokine gates:
 
-```{r Plot gating}
-
+```{r Plot gating1, warning=FALSE}
 plot(gs)
 CytoExploreR::cyto_plot_gating_tree(gs)
-#CytoExploreR::cyto_plot_gating_scheme(gs)
+```
 
+```{r Plot gating2, warning=FALSE,fig.width=12, fig.height=6, dev='png'}
+CytoExploreR::cyto_plot_custom(matrix(c(1:8),ncol=4,byrow=TRUE))
+for(sample_plot in c(1,2)){
+  for(channel_plot in c("IFN","TNFa","IL2","CD107a")){
+    CytoExploreR::cyto_plot(gs[[sample_plot]],
+                            parent = "root",
+                            channels = c(channel_plot,"CD8"),
+                            alias = "")
+    }
+}
 ```
 
 ### 2.3) Defining cell populations
@@ -217,13 +225,13 @@ names(df_markerComb)
 
 ```
 
-The two modes are described in the figure below (`TRUE` = black, `FALSE` = grey):
+The two modes are described in the figure below:
 
 <img src="figures/assignMarkerCombinations_modes.png" width="100%"/>
 
 ### 4.3) Calculating peptide-specificity
 
-To calculate peptide-specificity, we need to add sample metadata to define cell population levels and stimulation conditions. Here we choose `resolution = "MarkerComb` to quantify at individual marker combination levels, but any column output from the previous function can be used (e.g. MarkerCount, Functionality, etc..)
+To calculate peptide-specificity, we need to add sample metadata to define cell population levels and stimulation conditions:
 
 ```{r polyICSFlow3}
 # Read metadata 
@@ -234,6 +242,56 @@ df <- df_markerComb %>%
     dplyr::mutate(ID = df_md$ID,
                   Stimulation = df_md$Stimulation,
                   cell_type = cell_labels_external)
+
+# Alternatively use the cell labels obtained from FlowSOM clustering in step 2.3
+# df <- df_markerComb %>%
+#     dplyr::mutate(ID = df_md$ID,
+#                   Stimulation = df_md$Stimulation,
+#                   cell_type = cell_labels)
+```
+
+#### 4.3.1) Example 1: Quantifying number of functions
+
+In the first example, we want to quantify the number of functions, so we choose `resolution = "MarkerCount"`
+
+```{r}
+# Calculate by Marker Count
+result <- calcPolyfunctionality(x = df,
+                                md_cols = c("ID"),
+                                pop_col = "cell_type",
+                                resolution = "MarkerCount",
+                                condition_col = "Stimulation",
+                                background_val = "Unstim")
+
+head(result)
+
+```
+
+The results can be plotted using ggplot:
+
+```{r }
+palette_MarkerCounts <- scales::brewer_pal(type = "qual")(3)
+
+result %>%
+  dplyr::filter(Stimulation != "Unstim")%>%
+  ggplot2::ggplot(ggplot2::aes(x = cell_type,
+                               y = perc_pos_backgroundSubtracted,
+                               fill = as.factor(MarkerCount)))+
+  ggh4x::facet_grid2(Stimulation~ID)+
+  ggplot2::geom_bar(stat="identity")+
+  ggplot2::theme_bw()+
+  ggplot2::ylab("Frequency of HIV-1-Gag specific CD8 T cells")+
+  ggplot2::xlab("CD8 metacluster")+
+  ggplot2::scale_fill_manual(values = palette_MarkerCounts,
+                             name = "Number of functions")
+
+```
+
+#### 4.3.2) Example 2: Quantifying individual marker combinations
+
+In the second example, we choose `resolution = "MarkerComb"` to quantify at individual marker combination levels:
+
+```{r polyICSFlow3b}
 
 # Calculate by Marker Combination
 result <- calcPolyfunctionality(x = df,
@@ -246,31 +304,58 @@ result <- calcPolyfunctionality(x = df,
 head(result)
 ```
 
-The results can be plottet using ggplot. From this, we see that metaclusters 2 and 4 are the most HIV-1 specific clusters, and that metacluster 4 has a high frequency of triple positive IFNg+TNFa+CD107a+ cells:
+The results can again be plottet using ggplot. From this, we see that metaclusters 2 and 4 are the most HIV-1 specific clusters, and that metacluster 4 has a high frequency of triple positive IFNg+TNFa+CD107a+ cells:
 
-```{r Plot result}
-library(ggplot2)
-library(ggh4x)
+```{r Plot result 3b}
+palette_markerCombs <- c("#DC050C","#FB8072","#1965B0","#7BAFDE",
+                         "#882E72","#B17BA6","#FF7F00","#FDB462",
+                         "#E7298A","#E78AC3","#33A02C", "#B2DF8A",
+                         "#55A1B1","#8DD3C7","#A6761D")
 result %>%
   dplyr::filter(Stimulation != "Unstim")%>%
-  ggplot(aes(x = cell_type,
-             y = perc_pos_backgroundSubtracted,
-             fill = MarkerComb))+
-  facet_grid2(Stimulation~ID)+
-  geom_bar(stat="identity")+
-  theme_bw()+
-  ylab("Frequency of HIV-1-Gag specific CD8 T cells")+
-  xlab("CD8 metacluster")+
-  scale_fill_manual(values = c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6","#FF7F00","#FDB462","#E7298A","#E78AC3","#33A02C", "#B2DF8A","#55A1B1","#8DD3C7","#A6761D"))
+  ggplot2::ggplot(ggplot2::aes(x = cell_type,
+                               y = perc_pos_backgroundSubtracted,
+                               fill = MarkerComb))+
+  ggh4x::facet_grid2(Stimulation~ID)+
+  ggplot2::geom_bar(stat="identity")+
+  ggplot2::theme_bw()+
+  ggplot2::ylab("Frequency of HIV-1-Gag specific CD8 T cells")+
+  ggplot2::xlab("CD8 metacluster")+
+  ggplot2::scale_fill_manual(values = palette_markerCombs,
+                             name = "Cytokine combinations")
 ```
 
-(Note that the FCS files were downsampled to 100,000 cells that were negative for all markers to reduce file size and run times; as a result, the apparent frequency of HIV-1–specific cells is artificially inflated and does not reflect the true biological frequency.)
+#### 4.3.3) Example 3: Quantifying polyfunctional IFN+ responses
 
-It is also possible to extract the cell counts for each marker combination:
+In the third example, we're interested in quantifying polyfunctional IFN+ responses, so we choose `resolution = "Polyfunctional_atleastIFN+"`:
 
-```{r Extract numbers}
-extractCellCounts(df_markerComb)
+```{r polyICSFlow3c}
+# Calculate by Polyfunctional_atleast_IFN+
+result <- calcPolyfunctionality(x = df,
+                                md_cols = c("ID"),
+                                pop_col = "cell_type",
+                                resolution = "Polyfunctional_atleast_IFN+",
+                                condition_col = "Stimulation",
+                                background_val = "Unstim")
+
+head(result)
 ```
+
+The results can again be plottet using ggplot:
+
+```{r Plot result 3c}
+result %>%
+  dplyr::filter(Stimulation != "Unstim")%>%
+  ggplot2::ggplot(ggplot2::aes(x = cell_type,
+                               y = perc_pos_backgroundSubtracted,
+                               fill = cell_type))+
+  ggplot2::geom_bar(stat="identity")+
+  ggplot2::theme_bw()+
+  ggplot2::ylab("Frequency of polyfunctional IFN+ HIV-1-Gag specific CD8 T cells")+
+  ggplot2::xlab("CD8 metacluster")
+```
+
+*(Note that the FCS files were downsampled to 100,000 cells that were negative for all markers to reduce file size and run times; as a result, the apparent frequency of HIV-1–specific cells is artificially inflated and does not reflect the true biological frequency.)*
 
 ## 5) Plotting options
 
@@ -307,6 +392,12 @@ p1+p2+plot_layout(guides = "collect",widths = c(1,4))
 set.seed(1) # setting a seed is recommended to get reproducible visualizations
 plotMarkerComb2DScatters(input = fs,
                          assigned_MarkerCombs = df_markerComb$MarkerComb)
+```
+
+It is also possible to extract the cell counts for each marker combination:
+
+```{r Extract numbers}
+extractCellCounts(df_markerComb)
 ```
 
 ## 6) Session info
