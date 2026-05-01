@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r Setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -128,7 +128,8 @@ Because our gatingSet only contains CD8 T cells, we gate on the root population 
 gt <- openCyto::gatingTemplate(file.path(path_data, "gatingTemp_cytokines.csv"))
 openCyto::gt_gating(x = gt, y = gs)
 
-gt@nodes
+# see nodes in gatingSet
+names(gt_get_nodes(gt))
 
 ```
 
@@ -159,7 +160,7 @@ FlowSOM clustering of the CD8 T cells:
 
 ```{r population labels}
 markers_clust <- c("CD45RA","CCR7","CD27","CD95","TCF1","Tbet","TIGIT","CD39","CCR4","CD16")
-channels_clust <- fs[[1]]@parameters@data %>% dplyr::filter(desc %in% markers_clust)%>%dplyr::pull(name) %>% unname
+channels_clust <- flowCore::pData(flowCore::parameters(fs[[1]])) %>% dplyr::filter(desc %in% markers_clust)%>%dplyr::pull(name) %>% unname
 fsom <- FlowSOM::FlowSOM(fs,
                          compensate = FALSE,
                          transform = FALSE,
@@ -175,7 +176,7 @@ cell_labels <- fsom$metaclustering[fsom$map$mapping[,1]]
 
 Loaded FlowSOM cluster labels from elsewhere:
 
-```{r}
+```{r Load cell labels}
 cell_labels_external <- readRDS(file.path(path_data, "cell_labels.rds"))
 ```
 
@@ -254,7 +255,7 @@ df <- df_markerComb %>%
 
 In the first example, we want to quantify the number of functions, so we choose `resolution = "MarkerCount"`
 
-```{r}
+```{r polyICSFlow 3a}
 # Calculate by Marker Count
 result <- calcPolyfunctionality(x = df,
                                 md_cols = c("ID"),
@@ -269,7 +270,7 @@ head(result)
 
 The results can be plotted using ggplot:
 
-```{r }
+```{r Plot result 3a}
 palette_MarkerCounts <- scales::brewer_pal(type = "qual")(3)
 
 result %>%

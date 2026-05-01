@@ -26,7 +26,7 @@ palette_backbone <- c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6
 
   }else{
 
-    unique_combinations = unlist(
+    unique_combinations <- unlist(
       lapply(seq_along(marker_names), function(n) {
         apply(utils::combn(marker_names, n), 2, paste0, collapse = "+")
         })) %>%
@@ -54,8 +54,21 @@ palette_backbone <- c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6
   markers <- .getMarkerNames(data_markerComb)
   n_markers <- length(markers)
 
+  at_least_vec <- if (n_markers > 1) seq_len(n_markers - 1) else integer(0)
+
+  msg <- paste0(
+    "Adding logical columns for at least ",
+    paste(at_least_vec, collapse = ", "),
+    " and ",
+    n_markers,
+    " markers and Polyfunctional, at least ",
+    paste(markers, collapse = ", "),
+    "..."
+  )
+  message(msg)
+
   # loop through combination sizes (2 to n_markers)
-  for (k in 1:n_markers) {
+  for (k in seq_len(n_markers)) {
     combs <- utils::combn(markers, k, simplify = FALSE)
     for (cmb in combs) {
       new_col <- paste0("atleast_",k,"_", paste0(cmb, "+", collapse = ""), "")
@@ -86,7 +99,7 @@ palette_backbone <- c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6
 
   levels_comb <- .findUniqueMarkerCombinations(marker_names, full_names = full_names)
   n_colors <- length(levels_comb)-1
-  palette_comb <- palette_backbone[1:n_colors]
+  palette_comb <- palette_backbone[seq_len(n_colors)]
 
   # expand with colorRampPalette
   if(any(is.na(palette_comb))){
@@ -94,7 +107,7 @@ palette_backbone <- c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6
     palette_comb <- grDevices::colorRampPalette(palette_comb)(n_colors)
   }
 
-  palette_comb = c("grey60",palette_comb) # add grey for all negative
+  palette_comb <- c("grey60",palette_comb) # add grey for all negative
   names(palette_comb) <- levels_comb # add names
 
   return(palette_comb)
@@ -150,13 +163,17 @@ palette_backbone <- c("#DC050C","#FB8072","#1965B0","#7BAFDE","#882E72","#B17BA6
 
   # Construct caption text
   n_plot_subsets <- length(plot_subsets)
+
   subsets_title_string <- if (n_plot_subsets == 1) {
     paste0("cell type ", plot_subsets)
   } else {
+    idx <- if (n_plot_subsets > 1) seq_len(n_plot_subsets - 1) else integer(0)
+
     paste0(
       "cell types ",
-      paste(plot_subsets[1:(n_plot_subsets - 1)], collapse = ", "),
-      " and ", plot_subsets[n_plot_subsets]
+      paste(plot_subsets[idx], collapse = ", "),
+      " and ",
+      plot_subsets[n_plot_subsets]
     )
   }
 

@@ -201,7 +201,7 @@ calcPolyfunctionality <- function(x, md_cols, pop_col = "cell_type", resolution 
 
   # refactorize the resolution (if originally a factor)
   if(refactor_resolution){
-    df_final[[resolution]] = factor(df_final[[resolution]],levels = unique_polyfunct)
+    df_final[[resolution]] <- factor(df_final[[resolution]],levels = unique_polyfunct)
   }
 
   # Check for low cell counts (n_cells_tot<100)

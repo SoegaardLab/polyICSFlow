@@ -63,7 +63,7 @@ plotMarkerCombHeatmap <- function(marker_names, orientation = c("vertical","hori
     palette_count <- c("grey85",scales::brewer_pal(type = "qual")(length(unique_grouped)-1))
   }
   if(is.null(palette_comb)){
-    palette_comb = .getNamedPaletteMarkerComb(marker_names = marker_names, full_names = full_names)
+    palette_comb <- .getNamedPaletteMarkerComb(marker_names = marker_names, full_names = full_names)
   }
   names(palette_count) <- unique_grouped
 
@@ -202,8 +202,8 @@ plotCellCountsExactly <- function(data_markerComb, cell_subset_params = list(cel
     palette_comb <- .getNamedPaletteMarkerComb(markers)
 
   }
-  Combs_present = intersect(names(palette_comb),unique(df_plot$MarkerComb))
-  palette_comb = palette_comb[Combs_present]
+  Combs_present <- intersect(names(palette_comb),unique(df_plot$MarkerComb))
+  palette_comb <- palette_comb[Combs_present]
 
   p <- df_plot %>%
     ggplot(aes(x = .data$value,
@@ -291,8 +291,6 @@ plotCellCountsAtLeast <- function(data_markerComb, cell_subset_params = list(cel
 
   # if mode = "simple" was used, i.e. at least columns missing, add them
   if(!any(grepl("atleast",names(data_markerComb)))){
-    msg <- paste("Input dataframe built using simple mode; adding logical columns for at least", paste(1:(n_markers-1),collapse = ", "),"and",n_markers, "markers (exhaustive mode) before plotting...")
-    message(msg)
     data_markerComb <- .getAtLeast_n(data_markerComb)
     message("Done!")
   }
@@ -315,10 +313,10 @@ plotCellCountsAtLeast <- function(data_markerComb, cell_subset_params = list(cel
 
   if(is.null(palette_comb)){
 
-    palette_comb = .getNamedPaletteMarkerComb(marker_names = markers)
+    palette_comb <- .getNamedPaletteMarkerComb(marker_names = markers)
   }
-  Combs_present = intersect(names(palette_comb),unique(df_plot$MarkerComb))
-  palette_comb = palette_comb[Combs_present]
+  Combs_present <- intersect(names(palette_comb),unique(df_plot$MarkerComb))
+  palette_comb <- palette_comb[Combs_present]
 
   p <- df_plot %>%
     ggplot(aes(x = .data$xlab,
@@ -503,10 +501,10 @@ plotMarkerComb2DScatters <- function(input, assigned_MarkerCombs, cell_subset_pa
     dplyr::ungroup()
 
   if(is.null(palette_comb)){
-    palette_comb = .getNamedPaletteMarkerComb(marker_names = marker_names)
+    palette_comb <- .getNamedPaletteMarkerComb(marker_names = marker_names)
   }
 
-  list_plots = list()
+  list_plots <- list()
   for(comb_plot in names(palette_comb)){
 
     color_highlight <- palette_comb[[comb_plot]]
@@ -556,7 +554,7 @@ plotMarkerComb2DScatters <- function(input, assigned_MarkerCombs, cell_subset_pa
                                     "FALSE" = "grey85"))
 
 
-    list_plots[[as.character(comb_plot)]] = p
+    list_plots[[as.character(comb_plot)]] <- p
 
   }
 

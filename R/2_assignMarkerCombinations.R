@@ -83,9 +83,6 @@ assignMarkerCombinations <- function(data_markerPos, mode = c("simple","exhausti
 
   }else if(mode == "exhaustive"){
 
-    msg <- paste0("Exhaustive mode chosen; adding logical columns for at least ", paste(1:(n_markers-1),collapse = ", ")," and ",n_markers, " markers and Polyfunctional, at least ",paste(markers,collapse=", "),"...")
-    message(msg)
-
     df_exhaustive <- df_simple %>%
       .getAtLeast_n() %>%
       .getPolyfunctionalAtLeast_marker()
