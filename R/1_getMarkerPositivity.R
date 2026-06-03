@@ -39,7 +39,7 @@
 getMarkerPositivity <- function(x, gate_names = NULL){
 
   if(is.null(gate_names)){
-    gate_names <- vapply(stringr::str_split(flowWorkspace::gs_get_leaf_nodes(x[[1]]),"/"),tail,1)
+    gate_names <- sapply(stringr::str_split(flowWorkspace::gs_get_leaf_nodes(x[[1]]),"/"),tail,1)
     message("No gate names provided, defaulting to leaf nodes:")
     for(gate in gate_names){
       message(gate)
