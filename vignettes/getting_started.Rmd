@@ -42,9 +42,6 @@ The examples below focus on the cytokines IFNγ, TNF, IL-2, and the degranulatio
 # 
 # remotes::install_github("RGLab/cytoinstaller")
 # 
-# if(!requireNamespace("devtools", quietly=TRUE)) 
-#   install.packages("devtools")
-# devtools::install_github("DillonHammill/CytoExploreR")
 # 
 # install.packages("cowplot")
 # install.packages("dplyr")
@@ -271,7 +268,7 @@ head(result)
 The results can be plotted using ggplot:
 
 ```{r Plot result 3a}
-palette_MarkerCounts <- scales::brewer_pal(type = "qual")(3)
+palette_MarkerCounts <- scales::brewer_pal(type = "qual")(4)
 
 result %>%
   dplyr::filter(Stimulation != "Unstim")%>%

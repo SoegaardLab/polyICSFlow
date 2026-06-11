@@ -14,7 +14,6 @@
 #'
 #' @references This code is strongly based on the \code{\link[FlowSOM]{GetFlowJoLabels}} function.
 #' @importFrom openCyto gatingTemplate gt_gating
-#' @importFrom CytoExploreR cyto_gate_draw
 #' @examples
 #' # Define path to data
 #' path_data <- system.file("extdata", package = "polyICSFlow")
