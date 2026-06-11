@@ -1,3 +1,7 @@
+# polyICSFlow 0.99.2 (2026/06/11)
+
+-   Fixed CytoExploreR dependency in vignette.
+
 # polyICSFlow 0.99.1 (2026/06/11)
 
 -   Fixed CytoExploreR dependency, which caused a build error in BiocContributions.
