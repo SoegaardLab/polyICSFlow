@@ -1,6 +1,9 @@
 ---
 title: "PolyICSFlow: Identifying the Frequency of Polyfunctional Antigen-Specific T cells in ICS Flow Cytometry Data"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
 vignette: >
   %\VignetteIndexEntry{getting_started}
   %\VignetteEngine{knitr::rmarkdown}
@@ -17,52 +20,39 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignettes describes a protocol for analysing flow cytometry intracellular cytokine staining (ICS) data with the polyICSFlow protocol. polyICSFlow is designed to assign single cells cytokine positivity based on gates and subsequently find cytokine combinations observed in the data, and lastly, quantify the peptide-specific T cells within a user-defined cell subset. The package requires pre-processed flow cytometry data from an ICS dataset with cells stimulated with a peptide of interest (e.g. viral peptide or a tumor antigen) and a negative control stimulation to determine background activation.
+# 1) Introduction
+
+This vignettes describes a protocol for analysing flow cytometry intracellular cytokine staining (ICS) data with the polyICSFlow protocol. polyICSFlow is designed to assign single cells cytokine positivity based on cytokine gates and subsequently find cytokine combinations observed in the data, and lastly, quantify the peptide-specific T cells within a user-defined cell subset. The package requires pre-processed flow cytometry data from an ICS dataset with cells stimulated with a peptide of interest (e.g. viral peptide or a tumor antigen) and a negative control stimulation to determine background.
 
 <img src="figures/workflow_extended.png" width="100%"/>
+
+## 1.1) Comparison with existing tools
+
+While several Bioconductor packages, including flowCore, openCyto, and CytoExploreR, support flow cytometry data processing and automated gating, they do not provide a dedicated and maintained workflow for downstream polyfunctionality analysis of ICS data. In particular, the *gating_polyFunctions* function previously available in openCyto has been deprecated. polyICSFlow addresses this gap by providing functions specifically designed for automated quantification and visualization of polyfunctional immune responses.
+
+By integrating with existing Bioconductor flow cytometry infrastructure, polyICSFlow offers a transparent, scalable, and customizable alternative to manual or commercial software-based analyses, facilitating reproducible immune monitoring studies in infectious diseases, cancer, and vaccine research.
+
+## 1.2) Example data
 
 In this vignette, we analyze two FCS files from the same participant: one stimulated with HIV Gag peptide and one unstimulated control. The samples were stained with a 27-color panel and acquired using spectral flow cytometry. This panel includes cytokine and degranulation markers (IFNγ, TNF, IL-2, CD107a), as well as markers of differentiation, proliferation, transcriptional activity, effector function, and immune checkpoints.
 
 The FCS files were transformed using estimateLogicle and pre-gated to exclude debris, dead cells, doublets, and non-lymphocytes. Low-quality events were further removed using PeacoQC. CD8 T cells were then identified by FlowSOM clustering of lymphocytes based on CD3, CD4, CD8, CD16, and CD19 expression, selecting the CD3⁺CD8⁺CD4⁻CD16⁻CD19⁻ FlowSOM metacluster.
 
-The examples below focus on the cytokines IFNγ, TNF, IL-2, and the degranulation marker CD107a; however, polyICSFlow can be applied to any combination of cytokines of interest in your flow panel. It is also compatible with any peptide stimulation enabling analyses of antigen specificity and is agnostic to the acquisition platform, supporting data from both spectral and conventional flow cytometry, provided appropriate preprocessing (see below) has been performed.
+The examples below focus on the cytokines IFNγ, TNF, IL-2, and the degranulation marker CD107a; however, polyICSFlow can be applied to any combination of cytokines of interest in your flow panel. It is also compatible with any peptide stimulation enabling analyses of antigen specificity and is agnostic to the acquisition platform, supporting data from both spectral and conventional flow cytometry, provided appropriate preprocessing has been performed.
 
-## 1) Installation
+# 2) Installation
 
-```{r Install packages}
-# if (!requireNamespace("BiocManager", quietly = TRUE)) 
-#   install.packages("BiocManager")
-# BiocManager::install("flowCore") 
-# BiocManager::install("flowWorkspace")
-# BiocManager::install("openCyto")
-# BiocManager::install("FlowSOM")
-# BiocManager::install("ComplexHeatmap")
-# BiocManager::install("SummarizedExperiment")
-# BiocManager::install("polyICSFlow")
-# 
-# remotes::install_github("RGLab/cytoinstaller")
-# 
-# 
-# install.packages("cowplot")
-# install.packages("dplyr")
-# install.packages("forcats")
-# install.packages("ggtext")
-# install.packages("rlang")
-# install.packages("scales")
-# install.packages("stringr")
-# install.packages("tidyselect")
-# install.packages("tidyr")
-# install.packages("magrittr")
-# install.packages("ggplot2")
-# install.packages("ggridges")
-# install.packages("ggh4x")
+```{r Install packages, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("polyICSFlow")
 ```
 
 ```{r Load libraries}
 library(polyICSFlow)
 ```
 
-## 2) Preparing the data
+# 3) Preparing the data
 
 polyICSFlow requires a gatingHierarchy or gatingSet as input with an applied gatingTemplate to gate on cytokines of interest.
 
@@ -72,14 +62,14 @@ To get our input for polyICSFlow, raw FCS files need to go through the following
 -   Cytokine gating
 -   Defining cell populations
 
-### 2.1) Data pre-processing
+## 3.1) Data pre-processing
 
 Data needs to be pre-processed including unmixing (spectral) or compensation (conventional), data transformation, and cleaning. Pre-processing steps have been described in detail elsewhere and will therefore not be shown here. We refer to resources such as:
 
 -   [Analyzing high-dimensional cytometry data using FlowSOM](https://pubmed.ncbi.nlm.nih.gov/34172973/)
 -   [How to Prepare Spectral Flow Cytometry Datasets for High Dimensional Data Analysis: A Practical Workflow](https://pubmed.ncbi.nlm.nih.gov/34868024/)
 
-### 2.2) Cytokine gating
+## 3.2) Cytokine gating
 
 We load our pre-processed data as a flowSet.
 
@@ -149,7 +139,7 @@ for(sample_plot in c(1,2)){
 }
 ```
 
-### 2.3) Defining cell populations
+## 3.3) Defining cell populations
 
 Cell population labels need to be provided as a string and can be obtained from any source, e.g., annotated metacluster_ids from FlowSOM clustering or cell labels obtained from manual gating.
 
@@ -177,9 +167,9 @@ Loaded FlowSOM cluster labels from elsewhere:
 cell_labels_external <- readRDS(file.path(path_data, "cell_labels.rds"))
 ```
 
-## 4) Using polyICSFlow
+# 4) Using polyICSFlow
 
-### 4.1) Assigning cytokine positivity
+## 4.1) Assigning cytokine positivity
 
 ```{r polyICSFlow1}
 # Get marker positivity per cell
@@ -189,7 +179,7 @@ df_markerPos <- getMarkerPositivity(x = gs,
 head(df_markerPos)
 ```
 
-### 4.2) Assigning marker combinations
+## 4.2) Assigning marker combinations
 
 From the output of the previous function, we then assign each cell cytokine combinations.
 
@@ -227,7 +217,7 @@ The two modes are described in the figure below:
 
 <img src="figures/assignMarkerCombinations_modes.png" width="100%"/>
 
-### 4.3) Calculating peptide-specificity
+## 4.3) Calculating peptide-specificity
 
 To calculate peptide-specificity, we need to add sample metadata to define cell population levels and stimulation conditions:
 
@@ -248,7 +238,7 @@ df <- df_markerComb %>%
 #                   cell_type = cell_labels)
 ```
 
-#### 4.3.1) Example 1: Quantifying number of functions
+### 4.3.1) Example 1: Quantifying number of functions
 
 In the first example, we want to quantify the number of functions, so we choose `resolution = "MarkerCount"`
 
@@ -285,7 +275,7 @@ result %>%
 
 ```
 
-#### 4.3.2) Example 2: Quantifying individual marker combinations
+### 4.3.2) Example 2: Quantifying individual marker combinations
 
 In the second example, we choose `resolution = "MarkerComb"` to quantify at individual marker combination levels:
 
@@ -323,7 +313,7 @@ result %>%
                              name = "Cytokine combinations")
 ```
 
-#### 4.3.3) Example 3: Quantifying polyfunctional IFN+ responses
+### 4.3.3) Example 3: Quantifying polyfunctional IFN+ responses
 
 In the third example, we're interested in quantifying polyfunctional IFN+ responses, so we choose `resolution = "Polyfunctional_atleastIFN+"`:
 
@@ -355,7 +345,7 @@ result %>%
 
 *(Note that the FCS files were downsampled to 100,000 cells that were negative for all markers to reduce file size and run times; as a result, the apparent frequency of HIV-1–specific cells is artificially inflated and does not reflect the true biological frequency.)*
 
-## 5) Plotting options
+# 5) Plotting options
 
 polyICSFlow offers different plotting options to visualise your data and cytokine combinations.
 
@@ -398,7 +388,7 @@ It is also possible to extract the cell counts for each marker combination:
 extractCellCounts(df_markerComb)
 ```
 
-## 6) Session info
+# 6) Session info
 
 ```{r sessionInfo}
 sessionInfo()
