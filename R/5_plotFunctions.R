@@ -307,8 +307,8 @@ plotCellCountsAtLeast <- function(data_markerComb, cell_subset_params = list(cel
     dplyr::group_by(.data$Marker,.data$MarkerComb)%>%
     dplyr::count()%>%
     dplyr::ungroup() %>%
-    dplyr::mutate(AtLeast = sapply(stringr::str_split(.data$Marker,"_"),"[[",2),
-                  xlab = sapply(stringr::str_split(.data$Marker,"_"),"[[",3))%>%
+    dplyr::mutate(AtLeast = stringr::str_split_i(.data$Marker, "_", 2),
+                  xlab = stringr::str_split_i(.data$Marker, "_", 3))%>%
     dplyr::mutate(xlab = forcats::fct_reorder(.data$xlab, .data$n, .fun = sum, .desc = TRUE))
 
   if(is.null(palette_comb)){
